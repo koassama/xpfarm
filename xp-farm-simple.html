@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>XP Farm</title>
+<style>
+  body{background:#1a1b1f;color:#eee;font-family:'Courier New',monospace;
+       max-width:460px;margin:0 auto;padding:24px}
+  h1{background:linear-gradient(#5b8731 0 22px,#8b6644 22px);border:3px solid;
+     border-color:#7bb33a #2a3d16 #2a3d16 #7bb33a;padding:16px;text-align:center;
+     font-size:20px;text-shadow:3px 3px 0 #0008;margin:0 0 20px}
+  input,select,button{width:100%;padding:10px;margin-bottom:10px;font:inherit;
+     font-size:15px;border:3px solid;border-radius:0}
+  input,select{background:#111;color:#eee;border-color:#26262b #6e6e78 #6e6e78 #26262b}
+  button{background:#5b8731;color:#fff;cursor:pointer;
+     border-color:#7bb33a #3d5c20 #3d5c20 #7bb33a}
+  button:active{transform:translateY(2px)}
+  li{list-style:none;background:#3f4046;border:3px solid;
+     border-color:#5e5f67 #232428 #232428 #5e5f67;padding:10px;margin-bottom:8px;
+     display:flex;justify-content:space-between;align-items:center;gap:10px}
+  ul{padding:0;margin:20px 0 0}
+  .x{width:auto;background:#c2392c;border-color:#e05548 #6d1a13 #6d1a13 #e05548;margin:0}
+  .t{color:#b9f227}
+  p{color:#888;text-align:center}
+</style>
+</head>
+<body>
+<h1>XP Farm Schedule</h1>
+
+<input id="n" placeholder="Your username" maxlength="24">
+<input id="d" type="date">
+<input id="t" type="time">
+<select id="m">
+  <option value="30">30 min</option>
+  <option value="60" selected>1 hour</option>
+  <option value="120">2 hours</option>
+</select>
+<button onclick="add()">Claim slot</button>
+
+<ul id="list"></ul>
+
+<script>
+const K='xpfarm:simple';let b=[];
+const $=i=>document.getElementById(i),p=n=>String(n).padStart(2,'0');
+const end=x=>{const[h,m]=x.t.split(':').map(Number),v=h*60+m+x.m;return p(Math.floor(v/60)%24)+':'+p(v%60)};
+
+async function load(){try{const r=await window.storage.get(K,true);b=JSON.parse(r.value)}catch(e){b=[]}draw()}
+async function save(){draw();try{await window.storage.set(K,JSON.stringify(b),true)}catch(e){}}
+
+function draw(){
+  b.sort((x,y)=>(x.d+x.t).localeCompare(y.d+y.t));
+  $('list').innerHTML=b.length?b.map((x,i)=>
+    `<li><span>${x.n.replace(/[<>&]/g,'')}<br><span class="t">${x.d} · ${x.t}–${end(x)}</span></span>
+     <button class="x" onclick="del(${i})">✕</button></li>`).join('')
+    :'<p>No one has claimed the farm yet.</p>';
+}
+function add(){
+  const n=$('n').value.trim(),d=$('d').value,t=$('t').value,m=+$('m').value;
+  if(!n||!d||!t)return alert('Fill in your name, day and time.');
+  const s=+t.split(':')[0]*60+ +t.split(':')[1];
+  const c=b.find(x=>x.d===d&&s<+x.t.split(':')[0]*60+ +x.t.split(':')[1]+x.m&&s+m>+x.t.split(':')[0]*60+ +x.t.split(':')[1]);
+  if(c)return alert(c.n+' has it until '+end(c)+'.');
+  b.push({n,d,t,m});$('n').value='';save();
+}
+function del(i){b.splice(i,1);save()}
+
+$('d').value=new Date().toISOString().slice(0,10);
+load();
+</script>
+</body>
+</html>
